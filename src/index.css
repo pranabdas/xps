@@ -10,7 +10,6 @@
   --clr-black: #222;
   --clr-background: hsl(210, 36%, 96%);
   --clr-border: hsl(210, 31%, 80%);
-  --transition: all 0.1s linear;
   --max-width: 650px;
   --spacing: 0.1rem;
   --radius: 0.25rem;
@@ -138,7 +137,6 @@ hr {
   margin-left: 0.5rem;
   margin-right: 0.5rem;
   cursor: pointer;
-  transition: var(--transition);
 }
 .btn:hover {
   background: var(--clr-secondary-dark);

@@ -49,12 +49,13 @@ function App() {
         if (!isNaN(parseFloat(temp[jj]))) {
           tempIntensity = tempIntensity + parseFloat(temp[jj]);
         } else {
-          setStatus(status + "NaN data point.\n");
+          setStatus(status + "❌ NaN data point.\n");
+          console.log("NaN data point.");
         }
       }
 
       if (temp.length !== angleDimSize) {
-        setStatus(status + "Error: angle dimension mismatch in data!\n");
+        setStatus(status + "❌ Angle dimension mismatch in data!\n");
         console.log("Error: angle dimension mismatch in data!");
       }
 
@@ -67,22 +68,24 @@ function App() {
         data.push([energy[ii], intensity[ii]]);
       }
     } else {
-      setStatus(status + "Length of energy and intensity do not match!\n");
+      setStatus(status + "❌ Length of energy and intensity do not match!\n");
+      console.log("Length of energy and intensity do not match!");
     }
 
     if (data.length < 1) {
-      setStatus("No data!\n");
+      setStatus(status + "❌ No data found!\n");
+      console.log("No data!");
+    } else {
+      setData(data);
+      setStatus(status + "✔️ Conversion done\n");
     }
-
-    setData(data);
   };
 
   const DownloadPlaintext = () => {
     let outFilename = null;
     if (
-      [".csv", ".dat", ".txt"].includes(
-        filename.slice(filename.length - 4, filename.length).toLowerCase()
-      )
+      filename.slice(filename.length - 4, filename.length).toLowerCase() ===
+      ".txt"
     ) {
       outFilename = filename.slice(0, filename.length - 4);
     } else {
@@ -106,6 +109,8 @@ function App() {
       element.download = outFilename + ".x_y";
       document.body.appendChild(element); // Required for this to work in FireFox
       element.click();
+    } else {
+      alert("❌ No data!");
     }
   };
 
@@ -128,6 +133,7 @@ function App() {
       setShowCopied(true);
     } else {
       navigator.clipboard.writeText("");
+      alert("❌ Empty data!");
     }
   };
 
@@ -140,19 +146,19 @@ function App() {
       const content = text.split("\n");
       setContent(content);
       setData([]);
-      setStatus("");
+      setStatus("✔️ File uploaded\n");
     };
   };
 
   return (
     <div className="container">
       <div className="wrapper">
-        <h3 style={{ color: "#15847b" }}>XPS App</h3>
+        <h3 style={{ color: "#15847b" }}>XPS Data Converter</h3>
         <hr />
         <br />
         <p>
           This app converts Scienta SES spectra (<code>.txt</code> format) into
-          energy vs intensity two column format.
+          energy vs intensity two column format, suitable for XPS data analysis.
         </p>
         <form className="form">
           <p>
@@ -160,7 +166,7 @@ function App() {
             <input
               type="file"
               onChange={HandleUpload}
-              style={{ width: "300px", fontSize: "1em", cursor: "pointer" }}
+              style={{ width: "300px", cursor: "pointer" }}
               title="Select file"
             />
           </p>
@@ -177,9 +183,8 @@ function App() {
         <br />
         <br />
         {status ? (
-          <p>
+          <p style={{ whiteSpace: "pre-line" }}>
             {status}
-            <br />
             <br />
           </p>
         ) : null}
@@ -207,9 +212,8 @@ function App() {
         <br />
       </div>
       <footer>
-        © Copyright {new Date().getFullYear().toString()}{" "}
-        <a href="https://pranabdas.github.io/">Pranab Das</a>. All rights
-        reserved.
+        Built and maintained by{" "}
+        <a href="https://github.com/pranabdas/xps">Pranab Das</a>.
       </footer>
     </div>
   );
