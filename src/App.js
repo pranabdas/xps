@@ -4,15 +4,17 @@ function App() {
   const [filename, setFilename] = useState("");
   const [content, setContent] = useState([]);
   const [data, setData] = useState([]);
+  const [angle, setAngle] = useState([]);
   const [status, setStatus] = useState("");
   const [showCopied, setShowCopied] = useState(false);
   const [isKinetic, setIsKinetic] = useState(false);
   const [isBinding, setIsBinding] = useState(false);
   const [fermiEnergy, setFermiEnergy] = useState(1482);
+  const [ymin, setYmin] = useState(0.0);
+  const [ymax, setYmax] = useState(0.0);
 
   const ProcessData = () => {
     let energy = [],
-      // angle = [],
       intensity = [],
       energyDimSize = 0,
       angleDimSize = 0,
@@ -30,14 +32,27 @@ function App() {
         // console.log("Dimension 2 size: ", angleDimSize);
       }
 
-      // if (content[ii].split("=")[0] === "Dimension 2 scale") {
-      //   angle = content[ii].split("=")[1].split(" ");
-      // }
-
       if (content[ii].trim() === "[Data 1]") {
         dataStart = ii + 1;
         break;
       }
+    }
+
+    let angleStart = 0,
+      angleEnd = angle.length - 1,
+      yMin = parseFloat(ymin),
+      yMax = parseFloat(ymax);
+
+    if (yMin !== angle[0]) {
+      let closestPoint = angle.map((value) => Math.abs(value - yMin));
+      angleStart = closestPoint.indexOf(Math.min(...closestPoint));
+      // console.log(angleStart);
+    }
+
+    if (yMax !== angle[angle.length - 1]) {
+      let closestPoint = angle.map((value) => Math.abs(value - yMax));
+      angleEnd = closestPoint.indexOf(Math.min(...closestPoint));
+      // console.log(angleEnd);
     }
 
     for (let ii = dataStart; ii < dataStart + energyDimSize; ii++) {
@@ -50,10 +65,10 @@ function App() {
       tempEnergy = parseFloat(temp.shift());
 
       if (isBinding) {
-        tempEnergy = fermiEnergy - tempEnergy;
+        tempEnergy = parseFloat(fermiEnergy) - tempEnergy;
       }
 
-      for (let jj = 0; jj < temp.length; jj++) {
+      for (let jj = angleStart; jj <= angleEnd; jj++) {
         if (!isNaN(parseFloat(temp[jj]))) {
           tempIntensity = tempIntensity + parseFloat(temp[jj]);
         } else {
@@ -82,7 +97,7 @@ function App() {
 
     if (data.length < 1) {
       setStatus(status + "❌ No data found!\n");
-      console.log("No data!");
+      console.log("No data found!");
     } else {
       setData(data);
       setStatus(status + "✔️ Conversion done\n");
@@ -159,6 +174,16 @@ function App() {
       for (let ii = 0; ii < content.length; ii++) {
         if (content[ii].split("=")[0] === "Dimension 1 name") {
           setIsKinetic(true);
+        }
+
+        if (content[ii].split("=")[0] === "Dimension 2 scale") {
+          let angle = content[ii].split("=")[1].split(" ");
+          angle = angle.filter((x) => x);
+          angle = angle.map((value) => parseFloat(value));
+
+          setAngle(angle);
+          setYmin(angle[0]);
+          setYmax(angle[angle.length - 1]);
           break;
         }
       }
@@ -170,7 +195,15 @@ function App() {
   };
 
   const HandleFermiEnergy = (e) => {
-    setFermiEnergy(parseFloat(e.target.value));
+    setFermiEnergy(e.target.value);
+  };
+
+  const HandleYmin = (e) => {
+    setYmin(e.target.value);
+  };
+
+  const HandleYmax = (e) => {
+    setYmax(e.target.value);
   };
 
   return (
@@ -193,6 +226,36 @@ function App() {
               title="Select file"
             />
           </p>
+          {angle.length ? (
+            <>
+              <p>Angular integration limits:</p>
+              <p>
+                θ<sub>min</sub> = &nbsp;
+                <input
+                  type="text"
+                  id="ymin"
+                  name="ymin"
+                  placeholder={ymin}
+                  value={ymin}
+                  onChange={HandleYmin}
+                  style={{ width: "120px" }}
+                />
+              </p>
+              <p>
+                θ<sub>max</sub> = &nbsp;
+                <input
+                  type="text"
+                  id="ymax"
+                  name="ymax"
+                  placeholder={ymax}
+                  value={ymax}
+                  onChange={HandleYmax}
+                  style={{ width: "120px" }}
+                />
+              </p>
+            </>
+          ) : null}
+
           {isKinetic ? (
             <p>
               <input
