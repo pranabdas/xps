@@ -6,6 +6,9 @@ function App() {
   const [data, setData] = useState([]);
   const [status, setStatus] = useState("");
   const [showCopied, setShowCopied] = useState(false);
+  const [isKinetic, setIsKinetic] = useState(false);
+  const [isBinding, setIsBinding] = useState(false);
+  const [fermiEnergy, setFermiEnergy] = useState(1482);
 
   const ProcessData = () => {
     let energy = [],
@@ -31,8 +34,9 @@ function App() {
       //   angle = content[ii].split("=")[1].split(" ");
       // }
 
-      if (content[ii].split("]")[0] === "[Data 1") {
+      if (content[ii].trim() === "[Data 1]") {
         dataStart = ii + 1;
+        break;
       }
     }
 
@@ -44,6 +48,10 @@ function App() {
       temp = content[ii].split(" ");
       temp = temp.filter((x) => x);
       tempEnergy = parseFloat(temp.shift());
+
+      if (isBinding) {
+        tempEnergy = fermiEnergy - tempEnergy;
+      }
 
       for (let jj = 0; jj < temp.length; jj++) {
         if (!isNaN(parseFloat(temp[jj]))) {
@@ -147,7 +155,22 @@ function App() {
       setContent(content);
       setData([]);
       setStatus("✔️ File uploaded\n");
+
+      for (let ii = 0; ii < content.length; ii++) {
+        if (content[ii].split("=")[0] === "Dimension 1 name") {
+          setIsKinetic(true);
+          break;
+        }
+      }
     };
+  };
+
+  const HandleIsBinding = (e) => {
+    setIsBinding(e.target.checked);
+  };
+
+  const HandleFermiEnergy = (e) => {
+    setFermiEnergy(parseFloat(e.target.value));
   };
 
   return (
@@ -170,6 +193,34 @@ function App() {
               title="Select file"
             />
           </p>
+          {isKinetic ? (
+            <p>
+              <input
+                type="checkbox"
+                style={{ width: "25px" }}
+                id="isBinding"
+                name="isBinding"
+                checked={isBinding}
+                onChange={HandleIsBinding}
+              />
+              Convert to binding energy (E<sub>bin</sub> = E<sub>F</sub> - E
+              <sub>kin</sub>)
+            </p>
+          ) : null}
+
+          {isBinding ? (
+            <p>
+              Fermi energy (hν - W<sub>φ</sub>):&nbsp;
+              <input
+                type="text"
+                id="fermiEnergy"
+                name="fermiEnergy"
+                placeholder={fermiEnergy}
+                value={fermiEnergy}
+                onChange={HandleFermiEnergy}
+              />
+            </p>
+          ) : null}
         </form>
         <button onClick={ProcessData} className="btn">
           Convert
