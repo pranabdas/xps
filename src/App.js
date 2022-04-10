@@ -1,19 +1,62 @@
 import { useState } from "react";
 
+function tNow() {
+  const tNow = new Date();
+  let hours = tNow.getHours();
+  if (hours === 0) {
+    hours = "00:"
+  }
+  else if (hours < 10) {
+    hours = `0${hours}:`;
+  } else {
+    hours = `${hours}:`;
+  }
+
+  let minutes = tNow.getMinutes();
+  if (minutes === 0) {
+    minutes = "00:"
+  }
+  else if (minutes < 10) {
+    minutes = `0${minutes}:`;
+  } else {
+    minutes = `${minutes}:`;
+  }
+
+  let seconds = tNow.getSeconds();
+  if (seconds === 0) {
+    seconds = "00"
+  }
+  else if (seconds < 10) {
+    seconds = `0${seconds}`;
+  } else {
+    seconds = `${seconds}`;
+  }
+
+  return hours + minutes + seconds;
+}
+
 function App() {
   const [filename, setFilename] = useState("");
   const [content, setContent] = useState([]);
   const [data, setData] = useState([]);
   const [angle, setAngle] = useState([]);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState([]);
   const [showCopied, setShowCopied] = useState(false);
   const [isKinetic, setIsKinetic] = useState(false);
-  const [isBinding, setIsBinding] = useState(false);
-  const [fermiEnergy, setFermiEnergy] = useState(1482);
-  const [ymin, setYmin] = useState(0.0);
-  const [ymax, setYmax] = useState(0.0);
+  const [appState, setAppState] = useState({
+    ymin: 0.0,
+    ymax: 0.0,
+    fermiEnergy: 1482,
+    isBinding: false,
+  });
 
   const ProcessData = () => {
+    if (!filename) {
+      let t = tNow();
+      setStatus([...status, `${t} ❌ Did you select a data file?`]);
+      return;
+    }
+
     let energy = [],
       intensity = [],
       energyDimSize = 0,
@@ -40,8 +83,8 @@ function App() {
 
     let angleStart = 0,
       angleEnd = angle.length - 1,
-      yMin = parseFloat(ymin),
-      yMax = parseFloat(ymax);
+      yMin = parseFloat(appState.ymin),
+      yMax = parseFloat(appState.ymax);
 
     if (yMin !== angle[0]) {
       let closestPoint = angle.map((value) => Math.abs(value - yMin));
@@ -64,21 +107,23 @@ function App() {
       temp = temp.filter((x) => x);
       tempEnergy = parseFloat(temp.shift());
 
-      if (isBinding) {
-        tempEnergy = parseFloat(fermiEnergy) - tempEnergy;
+      if (appState.isBinding) {
+        tempEnergy = parseFloat(appState.fermiEnergy) - tempEnergy;
       }
 
       for (let jj = angleStart; jj <= angleEnd; jj++) {
         if (!isNaN(parseFloat(temp[jj]))) {
           tempIntensity = tempIntensity + parseFloat(temp[jj]);
         } else {
-          setStatus(status + "❌ NaN data point.\n");
+          let t = tNow();
+          setStatus([...status, `${t} ❌ NaN data point.`]);
           console.log("NaN data point.");
         }
       }
 
       if (temp.length !== angleDimSize) {
-        setStatus(status + "❌ Angle dimension mismatch in data!\n");
+        let t = tNow();
+        setStatus([...status, `${t} ❌ Angle dimension mismatch in data!`]);
         console.log("Error: angle dimension mismatch in data!");
       }
 
@@ -91,16 +136,22 @@ function App() {
         data.push([energy[ii], intensity[ii]]);
       }
     } else {
-      setStatus(status + "❌ Length of energy and intensity do not match!\n");
+      let t = tNow();
+      setStatus([
+        ...status,
+        `${t} ❌ Length of energy and intensity do not match!`,
+      ]);
       console.log("Length of energy and intensity do not match!");
     }
 
     if (data.length < 1) {
-      setStatus(status + "❌ No data found!\n");
+      let t = tNow();
+      setStatus([...status, `${t} ❌ No data found!`]);
       console.log("No data found!");
     } else {
       setData(data);
-      setStatus(status + "✔️ Conversion done\n");
+      let t = tNow();
+      setStatus([...status, `${t} ✔️ Conversion done.`]);
     }
   };
 
@@ -133,7 +184,8 @@ function App() {
       document.body.appendChild(element); // Required for this to work in FireFox
       element.click();
     } else {
-      alert("❌ No data!");
+      let t = tNow();
+      setStatus([...status, `${t} ❌ No data to save!`]);
     }
   };
 
@@ -156,7 +208,8 @@ function App() {
       setShowCopied(true);
     } else {
       navigator.clipboard.writeText("");
-      alert("❌ Empty data!");
+      let t = tNow();
+      setStatus([...status, `${t} ❌ No data! Empty clipboard.`]);
     }
   };
 
@@ -169,10 +222,11 @@ function App() {
       const content = text.split("\n");
       setContent(content);
       setData([]);
-      setStatus("✔️ File uploaded\n");
+      let t = tNow();
+      setStatus([...status, `${t} ✔️ New file selected.`]);
 
       for (let ii = 0; ii < content.length; ii++) {
-        if (content[ii].split("=")[0] === "Dimension 1 name") {
+        if (content[ii].trim() === "Dimension 1 name=Kinetic Energy [eV]") {
           setIsKinetic(true);
         }
 
@@ -182,28 +236,23 @@ function App() {
           angle = angle.map((value) => parseFloat(value));
 
           setAngle(angle);
-          setYmin(angle[0]);
-          setYmax(angle[angle.length - 1]);
+          setAppState({
+            ...appState,
+            ymin: angle[0],
+            ymax: angle[angle.length - 1],
+          });
           break;
         }
       }
     };
   };
 
-  const HandleIsBinding = (e) => {
-    setIsBinding(e.target.checked);
-  };
+  const HandleChange = (e) => {
+    const target = e.target;
+    const name = target.name;
+    const value = target.type === "checkbox" ? target.checked : target.value;
 
-  const HandleFermiEnergy = (e) => {
-    setFermiEnergy(e.target.value);
-  };
-
-  const HandleYmin = (e) => {
-    setYmin(e.target.value);
-  };
-
-  const HandleYmax = (e) => {
-    setYmax(e.target.value);
+    setAppState({ ...appState, [name]: value });
   };
 
   return (
@@ -235,9 +284,9 @@ function App() {
                   type="text"
                   id="ymin"
                   name="ymin"
-                  placeholder={ymin}
-                  value={ymin}
-                  onChange={HandleYmin}
+                  placeholder={0.0}
+                  value={appState.ymin}
+                  onChange={HandleChange}
                   style={{ width: "120px" }}
                 />
               </p>
@@ -247,9 +296,9 @@ function App() {
                   type="text"
                   id="ymax"
                   name="ymax"
-                  placeholder={ymax}
-                  value={ymax}
-                  onChange={HandleYmax}
+                  placeholder={0.0}
+                  value={appState.ymax}
+                  onChange={HandleChange}
                   style={{ width: "120px" }}
                 />
               </p>
@@ -263,24 +312,24 @@ function App() {
                 style={{ width: "25px" }}
                 id="isBinding"
                 name="isBinding"
-                checked={isBinding}
-                onChange={HandleIsBinding}
+                checked={appState.isBinding}
+                onChange={HandleChange}
               />
               Convert to binding energy (E<sub>bin</sub> = E<sub>F</sub> - E
               <sub>kin</sub>)
             </p>
           ) : null}
 
-          {isBinding ? (
+          {appState.isBinding ? (
             <p>
-              Fermi energy (hν - W<sub>φ</sub>):&nbsp;
+              Fermi energy (hν - W<sub>φ</sub>) =&nbsp;
               <input
                 type="text"
                 id="fermiEnergy"
                 name="fermiEnergy"
-                placeholder={fermiEnergy}
-                value={fermiEnergy}
-                onChange={HandleFermiEnergy}
+                placeholder={1482.0}
+                value={appState.fermiEnergy}
+                onChange={HandleChange}
               />
             </p>
           ) : null}
@@ -296,11 +345,12 @@ function App() {
         </button>
         <br />
         <br />
-        {status ? (
-          <p style={{ whiteSpace: "pre-line" }}>
-            {status}
-            <br />
-          </p>
+        {status.length ? (
+          <>
+            {status.map((item, key) => (
+              <p key={key}>{item}</p>
+            ))}
+          </>
         ) : null}
         {data.length ? (
           <table>
