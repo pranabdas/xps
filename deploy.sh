@@ -22,7 +22,7 @@ find . -type f -name .DS_Store -delete
 echo "Updating on github ..."
 git add --all && git commit --amend --no-edit && git push origin gh-pages --force
 # New commit
-# git add --all && gith commit -m "Updates" && git push origin gh-pages
+# git add --all && git commit -m "Updates" && git push origin gh-pages
 
 cd ../..
 if [ -d "tmp" ] ; then

@@ -4,9 +4,8 @@ function tNow() {
   const tNow = new Date();
   let hours = tNow.getHours();
   if (hours === 0) {
-    hours = "00:"
-  }
-  else if (hours < 10) {
+    hours = "00:";
+  } else if (hours < 10) {
     hours = `0${hours}:`;
   } else {
     hours = `${hours}:`;
@@ -14,9 +13,8 @@ function tNow() {
 
   let minutes = tNow.getMinutes();
   if (minutes === 0) {
-    minutes = "00:"
-  }
-  else if (minutes < 10) {
+    minutes = "00:";
+  } else if (minutes < 10) {
     minutes = `0${minutes}:`;
   } else {
     minutes = `${minutes}:`;
@@ -24,9 +22,8 @@ function tNow() {
 
   let seconds = tNow.getSeconds();
   if (seconds === 0) {
-    seconds = "00"
-  }
-  else if (seconds < 10) {
+    seconds = "00";
+  } else if (seconds < 10) {
     seconds = `0${seconds}`;
   } else {
     seconds = `${seconds}`;
@@ -147,7 +144,7 @@ function App() {
     if (data.length < 1) {
       let t = tNow();
       setStatus([...status, `${t} ❌ No data found!`]);
-      console.log("No data found!");
+      // console.log("No data found!");
     } else {
       setData(data);
       let t = tNow();
@@ -214,7 +211,8 @@ function App() {
   };
 
   const HandleUpload = (e) => {
-    setFilename(e.target.files[0].name);
+    const fname = e.target.files[0].name;
+    setFilename(fname);
     const reader = new FileReader();
     reader.readAsText(e.target.files[0]);
     reader.onload = async (e) => {
@@ -223,13 +221,25 @@ function App() {
       setContent(content);
       setData([]);
       let t = tNow();
-      setStatus([...status, `${t} ✔️ New file selected.`]);
+      setStatus([...status, `${t} ✔️ New file '${fname}' selected.`]);
+
+      let isKineticEnergy = false;
 
       for (let ii = 0; ii < content.length; ii++) {
-        if (content[ii].trim() === "Dimension 1 name=Kinetic Energy [eV]") {
-          setIsKinetic(true);
+        if (content[ii].split("=")[0] === "Dimension 1 name") {
+          if (content[ii].split("=")[1].trim() === "Kinetic Energy [eV]") {
+            setIsKinetic(true);
+            isKineticEnergy = true;
+          } else {
+            setIsKinetic(false);
+          }
+          break;
+        } else {
+          setIsKinetic(false);
         }
+      }
 
+      for (let ii = 0; ii < content.length; ii++) {
         if (content[ii].split("=")[0] === "Dimension 2 scale") {
           let angle = content[ii].split("=")[1].split(" ");
           angle = angle.filter((x) => x);
@@ -242,6 +252,14 @@ function App() {
             ymax: angle[angle.length - 1],
           });
           break;
+        } else {
+          setAngle([]);
+          setAppState({
+            ...appState,
+            ymin: 0.0,
+            ymax: 0.0,
+            isBinding: isKineticEnergy,
+          });
         }
       }
     };
