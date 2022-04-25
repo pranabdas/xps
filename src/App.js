@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
 
 function tNow() {
   const tNow = new Date();
@@ -152,6 +153,68 @@ function App() {
     }
   };
 
+  const onDrop = useCallback((acceptedFiles) => {
+    acceptedFiles.forEach((file) => {
+      setFilename(file.name);
+      const reader = new FileReader();
+
+      reader.readAsText(file);
+      reader.onload = async () => {
+        const text = reader.result;
+        const content = text.split("\n");
+
+        setContent(content);
+        setData([]);
+
+        let t = tNow();
+        setStatus([`${t} ✔️ New file '${file.name}' selected.`]);
+
+        let isKineticEnergy = false;
+
+        for (let ii = 0; ii < content.length; ii++) {
+          if (content[ii].split("=")[0] === "Dimension 1 name") {
+            if (content[ii].split("=")[1].trim() === "Kinetic Energy [eV]") {
+              setIsKinetic(true);
+              isKineticEnergy = true;
+            } else {
+              setIsKinetic(false);
+            }
+            break;
+          } else {
+            setIsKinetic(false);
+          }
+        }
+
+        for (let ii = 0; ii < content.length; ii++) {
+          if (content[ii].split("=")[0] === "Dimension 2 scale") {
+            let angle = content[ii].split("=")[1].split(" ");
+            angle = angle.filter((x) => x);
+            angle = angle.map((value) => parseFloat(value));
+
+            setAngle(angle);
+            setAppState({
+              ymin: angle[0],
+              ymax: angle[angle.length - 1],
+              fermiEnergy: 1482,
+              isBinding: false,
+            });
+            break;
+          } else {
+            setAngle([]);
+            setAppState({
+              ymin: 0.0,
+              ymax: 0.0,
+              fermiEnergy: 1482,
+              isBinding: isKineticEnergy,
+            });
+          }
+        }
+      };
+    });
+  }, []);
+
+  const { getRootProps, getInputProps } = useDropzone({ onDrop, maxFiles: 1 });
+
   const DownloadPlaintext = () => {
     let outFilename = null;
     if (
@@ -210,61 +273,6 @@ function App() {
     }
   };
 
-  const HandleUpload = (e) => {
-    const fname = e.target.files[0].name;
-    setFilename(fname);
-    const reader = new FileReader();
-    reader.readAsText(e.target.files[0]);
-    reader.onload = async (e) => {
-      const text = e.target.result;
-      const content = text.split("\n");
-      setContent(content);
-      setData([]);
-      let t = tNow();
-      setStatus([...status, `${t} ✔️ New file '${fname}' selected.`]);
-
-      let isKineticEnergy = false;
-
-      for (let ii = 0; ii < content.length; ii++) {
-        if (content[ii].split("=")[0] === "Dimension 1 name") {
-          if (content[ii].split("=")[1].trim() === "Kinetic Energy [eV]") {
-            setIsKinetic(true);
-            isKineticEnergy = true;
-          } else {
-            setIsKinetic(false);
-          }
-          break;
-        } else {
-          setIsKinetic(false);
-        }
-      }
-
-      for (let ii = 0; ii < content.length; ii++) {
-        if (content[ii].split("=")[0] === "Dimension 2 scale") {
-          let angle = content[ii].split("=")[1].split(" ");
-          angle = angle.filter((x) => x);
-          angle = angle.map((value) => parseFloat(value));
-
-          setAngle(angle);
-          setAppState({
-            ...appState,
-            ymin: angle[0],
-            ymax: angle[angle.length - 1],
-          });
-          break;
-        } else {
-          setAngle([]);
-          setAppState({
-            ...appState,
-            ymin: 0.0,
-            ymax: 0.0,
-            isBinding: isKineticEnergy,
-          });
-        }
-      }
-    };
-  };
-
   const HandleChange = (e) => {
     const target = e.target;
     const name = target.name;
@@ -283,16 +291,39 @@ function App() {
           This app converts Scienta SES spectra (<code>.txt</code> format) into
           energy vs intensity two column format, suitable for XPS data analysis.
         </p>
+
+        <div {...getRootProps()}>
+          <input {...getInputProps()} />
+          {filename ? (
+            <div className="dropzone">
+              <p>
+                Selected file: <b>{filename}</b>
+                <br />
+              </p>
+              <p style={{ color: "grey", fontSize: "0.9em" }}>
+                <i>
+                  (If required, you can drop a new file in this box again, or
+                  click to browse)
+                </i>
+              </p>
+            </div>
+          ) : (
+            <div
+              className="dropzone"
+              style={{ paddingTop: "5em", paddingBottom: "5em" }}
+            >
+              <p>
+                <b>Drop</b> your data file in this box, or <b>click</b> here to
+                select.
+              </p>
+              <p style={{ color: "grey", fontSize: "0.9em" }}>
+                <i>(Please drop or select a single file)</i>
+              </p>
+            </div>
+          )}
+        </div>
+
         <form className="form">
-          <p>
-            Select data file:&emsp;
-            <input
-              type="file"
-              onChange={HandleUpload}
-              style={{ width: "300px", cursor: "pointer" }}
-              title="Select file"
-            />
-          </p>
           {angle.length ? (
             <>
               <p>Angular integration limits:</p>
@@ -352,17 +383,27 @@ function App() {
             </p>
           ) : null}
         </form>
-        <button onClick={ProcessData} className="btn">
-          Convert
-        </button>
-        <button className="btn" onClick={DownloadPlaintext}>
-          Save
-        </button>
-        <button className="btn" onClick={CopyToClipboard}>
-          {showCopied ? "Copied" : "Copy"}
-        </button>
+
+        {filename ? (
+          <button onClick={ProcessData} className="btn">
+            Convert
+          </button>
+        ) : null}
+
+        {data.length ? (
+          <>
+            <button className="btn" onClick={DownloadPlaintext}>
+              Save
+            </button>
+            <button className="btn" onClick={CopyToClipboard}>
+              {showCopied ? "Copied" : "Copy"}
+            </button>
+          </>
+        ) : null}
+
         <br />
         <br />
+
         {status.length ? (
           <>
             {status.map((item, key) => (
