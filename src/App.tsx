@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import ScatterPlot from "./Plot";
 
 interface Config {
   angleMin: number;
@@ -135,13 +136,11 @@ function App(): JSX.Element {
     if (yMin !== angle[0]) {
       let closestPoint = angle.map((value) => Math.abs(value - yMin));
       angleStart = closestPoint.indexOf(Math.min(...closestPoint));
-      // console.log(angleStart);
     }
 
     if (yMax !== angle[angle.length - 1]) {
       let closestPoint = angle.map((value) => Math.abs(value - yMax));
       angleEnd = closestPoint.indexOf(Math.min(...closestPoint));
-      // console.log(angleEnd);
     }
 
     for (let ii = dataStart; ii < dataStart + energyDimSize; ii++) {
@@ -288,7 +287,7 @@ function App(): JSX.Element {
 
         <div {...getRootProps()}>
           <input {...getInputProps()} />
-          {filename ? (
+          {filename !== "" ? (
             <div className="dropzone">
               <p>
                 Selected file: <b>{filename}</b>
@@ -407,24 +406,29 @@ function App(): JSX.Element {
         )}
 
         {data.length > 0 && (
-          <table>
-            <tbody>
-              <tr>
-                <th>Energy (eV)</th>
-                <th>Intensity (a.u.)</th>
-              </tr>
-              {data.map((value, key) => (
-                <tr key={key}>
-                  <td>
-                    <code>{value[0]}</code>
-                  </td>
-                  <td>
-                    <code>{value[1].toExponential()}</code>
-                  </td>
+          <>
+            <ScatterPlot plotData={data} isBinding={config.isBinding}/>
+            <br />
+            <br />
+            <table>
+              <tbody>
+                <tr>
+                  <th>Energy (eV)</th>
+                  <th>Intensity (a.u.)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                {data.map((value, key) => (
+                  <tr key={key}>
+                    <td>
+                      <code>{value[0]}</code>
+                    </td>
+                    <td>
+                      <code>{value[1].toExponential()}</code>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
         <br />
         <br />
@@ -474,9 +478,9 @@ const tNow = () => {
 
 const splitByLineBreaks = (content: string) => {
   return content
-    .replace(/\r/g, "\n") // replace carriage return `\r` to `\n`
-    .replace(/[\n]+/g, "\n") // replace multiple `\n` by single `\n`
-    .replace(/^\n/, "") // trim any new line character in the beginning
+    .replace(/\r/g, "\n") // convert carriage return `\r` to `\n`
+    .replace(/[\n]+/g, "\n") // replace multiple consecutive `\n` by single `\n`
+    .replace(/^\n/, "") // remove any new line character in the beginning
     .replace(/\n$/, "") // trim any new line character at the end
     .split("\n");
 };
