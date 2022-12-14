@@ -23,12 +23,15 @@ function App(): JSX.Element {
     fermiEnergy: 1482.0,
     isBinding: false,
   });
+  const [isLoading, setLoading] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     acceptedFiles.forEach((file) => {
       setFilename(file.name);
-      const reader = new FileReader();
+      setLoading(true);
+      setStatus([]);
 
+      const reader = new FileReader();
       reader.readAsText(file);
       let content: string[];
 
@@ -47,6 +50,7 @@ function App(): JSX.Element {
 
         setContent(content);
         setData([]);
+        setLoading(false);
 
         let t = tNow();
         setStatus([`${t} ✔️ New file '${file.name}' selected.`]);
@@ -200,14 +204,14 @@ function App(): JSX.Element {
       console.log("Length of energy and intensity do not match!");
     }
 
-    if (data.length < 1) {
+    if (data.length === 0) {
       let t = tNow();
       setStatus([...status, `${t} ❌ No data found!`]);
       // console.log("No data found!");
     } else {
       setData(data);
       let t = tNow();
-      setStatus([...status, `${t} ✔️ Conversion done.`]);
+      setStatus([...status, `${t} ✔️ Line profile created.`]);
     }
   };
 
@@ -222,7 +226,7 @@ function App(): JSX.Element {
       outFilename = filename + ".x_y";
     }
 
-    if (data.length) {
+    if (data.length > 0) {
       let downloadContent = "";
 
       for (let ii = 0; ii < data.length; ii++) {
@@ -282,7 +286,8 @@ function App(): JSX.Element {
         <br />
         <p>
           This app converts Scienta SES spectra (<code>.txt</code> format) into
-          energy vs intensity two column format, suitable for XPS data analysis.
+          energy vs intensity two column format by integrating along the angular
+          dimension, suitable for XPS data analysis.
         </p>
 
         <div {...getRootProps()}>
@@ -310,128 +315,134 @@ function App(): JSX.Element {
                 select.
               </p>
               <p style={{ color: "grey", fontSize: "0.9em" }}>
-                <i>(Please drop or select a single file)</i>
+                <i>(Please drag & drop or select a single file at a time)</i>
               </p>
             </div>
           )}
         </div>
 
-        <form className="form">
-          {angle.length > 0 && (
-            <>
-              <p>Angular integration limits:</p>
-              <p>
-                θ<sub>min</sub> = &nbsp;
-                <input
-                  type="text"
-                  id="angleMin"
-                  name="angleMin"
-                  placeholder={(0.0).toString()}
-                  value={config.angleMin}
-                  onChange={HandleChange}
-                  style={{ width: "120px" }}
-                />
-              </p>
-              <p>
-                θ<sub>max</sub> = &nbsp;
-                <input
-                  type="text"
-                  id="angleMax"
-                  name="angleMax"
-                  placeholder={(0.0).toString()}
-                  value={config.angleMax}
-                  onChange={HandleChange}
-                  style={{ width: "120px" }}
-                />
-              </p>
-            </>
-          )}
-
-          {isKinetic && (
-            <p>
-              <input
-                type="checkbox"
-                style={{ width: "25px" }}
-                id="isBinding"
-                name="isBinding"
-                checked={config.isBinding}
-                onChange={HandleChange}
-              />
-              Convert to binding energy (E<sub>bin</sub> = E<sub>F</sub> - E
-              <sub>kin</sub>)
-            </p>
-          )}
-
-          {config.isBinding && (
-            <p>
-              Fermi energy (hν - W<sub>φ</sub>) =&nbsp;
-              <input
-                type="text"
-                id="fermiEnergy"
-                name="fermiEnergy"
-                placeholder={(1482.0).toString()}
-                value={config.fermiEnergy}
-                onChange={HandleChange}
-              />
-            </p>
-          )}
-        </form>
-
-        {filename && (
-          <button onClick={ProcessData} className="btn">
-            Convert
-          </button>
-        )}
-
-        {data.length > 0 && (
+        {isLoading ? (
+          <p style={{ color: "grey" }}>Please wait. Loading file content...</p>
+        ) : (
           <>
-            <button className="btn" onClick={DownloadPlaintext}>
-              Save
-            </button>
-            <button className="btn" onClick={CopyToClipboard}>
-              {showCopied ? "Copied" : "Copy"}
-            </button>
-          </>
-        )}
+            <form className="form">
+              {angle.length > 0 && (
+                <>
+                  <p>Angular integration limits:</p>
+                  <p>
+                    θ<sub>min</sub> = &nbsp;
+                    <input
+                      type="text"
+                      id="angleMin"
+                      name="angleMin"
+                      placeholder={(0.0).toString()}
+                      value={config.angleMin}
+                      onChange={HandleChange}
+                      style={{ width: "120px" }}
+                    />
+                  </p>
+                  <p>
+                    θ<sub>max</sub> = &nbsp;
+                    <input
+                      type="text"
+                      id="angleMax"
+                      name="angleMax"
+                      placeholder={(0.0).toString()}
+                      value={config.angleMax}
+                      onChange={HandleChange}
+                      style={{ width: "120px" }}
+                    />
+                  </p>
+                </>
+              )}
 
-        <br />
-        <br />
+              {isKinetic && (
+                <p>
+                  <input
+                    type="checkbox"
+                    style={{ width: "25px" }}
+                    id="isBinding"
+                    name="isBinding"
+                    checked={config.isBinding}
+                    onChange={HandleChange}
+                  />
+                  Convert to binding energy (E<sub>bin</sub> = E<sub>F</sub> - E
+                  <sub>kin</sub>)
+                </p>
+              )}
 
-        {status.length > 0 && (
-          <>
-            {status.map((item, key) => (
-              <p key={key}>{item}</p>
-            ))}
-          </>
-        )}
+              {config.isBinding && (
+                <p>
+                  Fermi energy (hν - W<sub>φ</sub>) =&nbsp;
+                  <input
+                    type="text"
+                    id="fermiEnergy"
+                    name="fermiEnergy"
+                    placeholder={(1482.0).toString()}
+                    value={config.fermiEnergy}
+                    onChange={HandleChange}
+                  />
+                </p>
+              )}
+            </form>
 
-        {data.length > 0 && (
-          <>
-            <ScatterPlot plotData={data} isBinding={config.isBinding}/>
+            {content.length > 0 && data.length === 0 && (
+              <button onClick={ProcessData} className="btn">
+                Create Line Profile
+              </button>
+            )}
+
+            {data.length > 0 && (
+              <>
+                <button className="btn" onClick={DownloadPlaintext}>
+                  Save
+                </button>
+                <button className="btn" onClick={CopyToClipboard}>
+                  {showCopied ? "Copied" : "Copy"}
+                </button>
+              </>
+            )}
+
             <br />
             <br />
-            <table>
-              <tbody>
-                <tr>
-                  <th>Energy (eV)</th>
-                  <th>Intensity (a.u.)</th>
-                </tr>
-                {data.map((value, key) => (
-                  <tr key={key}>
-                    <td>
-                      <code>{value[0]}</code>
-                    </td>
-                    <td>
-                      <code>{value[1].toExponential()}</code>
-                    </td>
-                  </tr>
+
+            {status.length > 0 && (
+              <>
+                {status.map((item, key) => (
+                  <p key={key}>{item}</p>
                 ))}
-              </tbody>
-            </table>
+              </>
+            )}
+
+            {data.length > 0 && (
+              <>
+                <ScatterPlot plotData={data} isBinding={config.isBinding} />
+                <br />
+                <br />
+                <table>
+                  <tbody>
+                    <tr>
+                      <th>Energy (eV)</th>
+                      <th>Intensity (a.u.)</th>
+                    </tr>
+                    {data.map((value, key) => (
+                      <tr key={key}>
+                        <td>
+                          <code>{value[0]}</code>
+                        </td>
+                        <td>
+                          <code>{value[1].toExponential()}</code>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+            <br />
+            <br />
           </>
         )}
-        <br />
-        <br />
       </div>
       <footer>
         Built and maintained by{" "}
