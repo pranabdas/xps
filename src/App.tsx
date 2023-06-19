@@ -126,7 +126,7 @@ function App(): JSX.Element {
         // console.log("Dimension 2 size: ", angleDimSize);
       }
 
-      if (content[ii].trim() === "[Data 1]") {
+      if (/^\[Data\s\d+\]$/.test(content[ii].trim())) {
         dataStart = ii + 1;
         break;
       }
