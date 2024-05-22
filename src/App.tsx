@@ -422,7 +422,11 @@ function App(): JSX.Element {
                 <table>
                   <tbody>
                     <tr>
-                      <th>Energy (eV)</th>
+                      <th>
+                        {config.isBinding
+                          ? "Binding Energy (eV)"
+                          : "Kinetic Energy (eV)"}
+                      </th>
                       <th>Intensity (a.u.)</th>
                     </tr>
                     {data.map((value, key) => (

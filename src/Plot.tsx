@@ -29,7 +29,7 @@ function ScatterPlot({
   ];
 
   let layout: Partial<Layout> = {
-    xaxis: { title: { text: "Energy (eV)" } },
+    xaxis: { title: { text: "Kinetic Energy (eV)" } },
     yaxis: { title: { text: "Intensity (a.u.)" } },
     font: { size: 14 },
     autosize: false,
@@ -46,7 +46,7 @@ function ScatterPlot({
   if (isBinding) {
     layout = {
       ...layout,
-      xaxis: { title: { text: "Energy (eV)" }, autorange: "reversed" },
+      xaxis: { title: { text: "Binding Energy (eV)" }, autorange: "reversed" },
     };
   }
 
