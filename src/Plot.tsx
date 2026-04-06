@@ -8,7 +8,7 @@ function ScatterPlot({
 }: {
   plotData: number[][];
   isBinding: boolean;
-}): JSX.Element {
+}) {
   const Plot = createPlotlyComponent(Plotly);
   let xData: number[] = [];
   let yData: number[] = [];
