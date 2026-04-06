@@ -1,0 +1,11 @@
+[build]
+  command = """
+  bash plotly-custom-build.sh
+  npm run build
+  bash set-headers.sh
+  """
+
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "lts/*"

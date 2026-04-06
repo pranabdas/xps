@@ -1,6 +1,9 @@
 import Plotly from "plotly.js/dist/plotly-scatter.min.js";
-import createPlotlyComponent from "react-plotly.js/factory";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import factoryModule from "react-plotly.js/factory";
 import { Data, Layout } from "plotly.js";
+
+const createPlotlyComponent = (factoryModule as any).default ?? factoryModule;
 
 function ScatterPlot({
   plotData,
@@ -8,7 +11,7 @@ function ScatterPlot({
 }: {
   plotData: number[][];
   isBinding: boolean;
-}): JSX.Element {
+}) {
   const Plot = createPlotlyComponent(Plotly);
   let xData: number[] = [];
   let yData: number[] = [];

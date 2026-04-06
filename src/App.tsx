@@ -9,7 +9,7 @@ interface Config {
   isBinding: boolean;
 }
 
-function App(): JSX.Element {
+function App() {
   const [filename, setFilename] = useState("");
   const [content, setContent] = useState<string[]>([]);
   const [data, setData] = useState<number[][]>([]);
